@@ -2,17 +2,24 @@
   "name": "tutorial-ai",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
+    "start": "node ./dist/index.js",
+    "dev:start": "tsc  && npm run start",
+    "build": "npx tsc",
+    "dev": "nodemon  --signal SIGKILL --watch src --ext \"*\"  --delay 0.5 --exec npm run dev:start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
+    "@types/express": "^5.0.6",
     "axios": "^1.20.0",
-    "dotenv": "^18.0.8"
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "nodemon": "^3.1.4"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

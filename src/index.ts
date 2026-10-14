@@ -1,10 +1,12 @@
 import axios from "axios";
 import * as dotenv from "dotenv";
+import express, { type Request, type Response } from "express";
 dotenv.config();
-async function firstAiResponse() {
+const app = express();
+app.get("/", async (req: Request, res: Response) => {
   const body = {
-    model: "gemma4:31b",
-    prompt: "Why is the sky blue?",
+    model: "gpt-oss:20b",
+    prompt: "Write hello world in c++.",
     stream: false,
   };
   const response = await axios.post(
@@ -16,6 +18,11 @@ async function firstAiResponse() {
       },
     },
   );
-  console.log(response.data);
-}
-firstAiResponse();
+  res.json(response.data);
+});
+
+const port = 3000;
+
+app.listen(port, () => {
+  console.log(`Server is running on port http://localhost:${port}`);
+});
