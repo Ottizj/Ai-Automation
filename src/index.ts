@@ -1,4 +1,6 @@
 import axios from "axios";
+import * as dotenv from "dotenv";
+dotenv.config();
 async function firstAiResponse() {
   const body = {
     model: "gemma4:31b",
@@ -14,4 +16,6 @@ async function firstAiResponse() {
       },
     },
   );
+  console.log(response.data);
 }
+firstAiResponse();
