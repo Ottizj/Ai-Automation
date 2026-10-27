@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatbot</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+  #messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .msg { padding: 8px 12px; border-radius: 12px; max-width: 80%; white-space: pre-wrap; }
+  .user { background: #2563eb; color: #fff; align-self: flex-end; }
+  .assistant { background: #eee; align-self: flex-start; }
+  form { display: flex; gap: 8px; margin-top: 12px; }
+  input { flex: 1; padding: 10px; font-size: 16px; }
+  button { padding: 10px 16px; font-size: 16px; }
+</style>
+</head>
+<body>
+<div id="messages"></div>
+<form id="form">
+  <input id="input" placeholder="Type a message..." autocomplete="off" />
+  <button id="send">Send</button>
+</form>
+
+<script>
+  const messagesEl = document.getElementById("messages");
+  const form = document.getElementById("form");
+  const input = document.getElementById("input");
+  const sendBtn = document.getElementById("send");
+  const history = [];
+
+  function addMessage(role, text) {
+    const el = document.createElement("div");
+    el.className = "msg " + role;
+    el.textContent = text;
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return el;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+
+    input.value = "";
+    sendBtn.disabled = true;
+    addMessage("user", message);
+    const botEl = addMessage("assistant", "...");
+    let reply = "";
+
+    try {
+      const res = await fetch("/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, history }),
+      });
+      if (!res.ok || !res.body) throw new Error("Request failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const events = buffer.split("\n\n");
+        buffer = events.pop(); // keep incomplete event for next chunk
+
+        for (const event of events) {
+          if (!event.startsWith("data: ")) continue;
+          const data = event.slice(6);
+          if (data === "[DONE]") continue;
+          const parsed = JSON.parse(data);
+          if (parsed.error) throw new Error(parsed.error);
+          reply += parsed.token;
+          botEl.textContent = reply;
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+      }
+
+      if (reply) {
+        history.push({ role: "user", content: message });
+        history.push({ role: "assistant", content: reply });
+      }
+    } catch (err) {
+      botEl.textContent = "Error: " + err.message;
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  });
+</script>
+</body>
+</html>
